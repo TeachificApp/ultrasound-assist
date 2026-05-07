@@ -23,9 +23,16 @@ const FEATURES = [
   { icon: Shield, title: "ScanCoach™ & Reference Values", desc: "Protocol guidance, guideline-based normal values and reference ranges" },
 ];
 
+function getSafeReturnTo(): string {
+  const params = new URLSearchParams(window.location.search);
+  const returnTo = params.get("returnTo");
+  return returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/";
+}
+
 export default function Login() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
+  const returnTo = getSafeReturnTo();
 
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
@@ -33,9 +40,9 @@ export default function Login() {
   // Redirect if already signed in
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      navigate("/");
+      navigate(returnTo);
     }
-  }, [isAuthenticated, loading, navigate]);
+  }, [isAuthenticated, loading, navigate, returnTo]);
 
   const requestMutation = trpc.auth.requestMagicLink.useMutation({
     onSuccess: () => setSent(true),
@@ -45,7 +52,7 @@ export default function Login() {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
     if (!trimmed || requestMutation.isPending) return;
-    requestMutation.mutate({ email: trimmed });
+    requestMutation.mutate({ email: trimmed, returnTo });
   };
 
   // Show redirect spinner when already authenticated

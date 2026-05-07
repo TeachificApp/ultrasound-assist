@@ -268,8 +268,13 @@ export function registerStripeWebhook(app: Express) {
 
       let event: Record<string, unknown>;
 
-      // Verify signature if secret is configured
-      if (STRIPE_WEBHOOK_SECRET && sig) {
+      // Verify signature if secret is configured.
+      if (STRIPE_WEBHOOK_SECRET) {
+        if (!sig) {
+          console.warn("[Stripe] Missing webhook signature header.");
+          res.status(400).json({ error: "Missing signature" });
+          return;
+        }
         try {
           // Simple HMAC verification without the Stripe SDK
           const crypto = await import("crypto");
@@ -284,7 +289,11 @@ export function registerStripeWebhook(app: Express) {
             .createHmac("sha256", STRIPE_WEBHOOK_SECRET)
             .update(payload)
             .digest("hex");
-          if (hmac !== expectedSig) throw new Error("Signature mismatch");
+          const hmacBuffer = Buffer.from(hmac, "hex");
+          const expectedBuffer = Buffer.from(expectedSig, "hex");
+          if (hmacBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(hmacBuffer, expectedBuffer)) {
+            throw new Error("Signature mismatch");
+          }
           event = JSON.parse(rawBody) as Record<string, unknown>;
         } catch (err) {
           console.error("[Stripe] Webhook signature verification failed:", err);

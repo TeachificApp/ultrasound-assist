@@ -513,7 +513,7 @@ export default function CourseLanding() {
           <RenderBlock key={block.id} block={block} course={course} onEnroll={handleEnroll} enrolling={enrolling || enrollFree.isPending || createCheckout.isPending} ctaText={ctaText} price={price} />
         ))}
         {/* Before-checkout order bump */}
-        {!course.isEnrolled && course && (
+        {!enrollment && (
           <div className="max-w-2xl mx-auto px-4 py-8">
             <OrderBumpOffer
               triggerType="course"

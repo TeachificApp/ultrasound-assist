@@ -310,7 +310,7 @@ export default function CoursePlayer() {
     );
   }
 
-  if (!data?.enrollment && !isPreviewMode) {
+  if (!data?.enrollment) {
     return (
       <div className="text-center py-20">
         <Lock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
@@ -320,14 +320,14 @@ export default function CoursePlayer() {
     );
   }
 
-  const { course, sections, progress } = data;
+  const { course, enrollment, sections, progress } = data;
   const topLevelLessons: any[] = (data as any).topLevelLessons ?? [];
   const completedIds = new Set(progress.filter((p: any) => p.completedAt).map((p: any) => p.lessonId));
   const bookmarkedIds = new Set((bookmarksData ?? []).map((b: any) => b.lessonId));
   const notesByLesson = new Map((notesData ?? []).map((n: any) => [n.lessonId, n]));
 
   // Enrollment date for drip calculation
-  const enrolledAt = data.enrollment?.enrolledAt ? new Date(data.enrollment.enrolledAt) : new Date();
+  const enrolledAt = enrollment.enrolledAt ? new Date(enrollment.enrolledAt) : new Date();
   const daysSinceEnroll = Math.floor((Date.now() - enrolledAt.getTime()) / (1000 * 60 * 60 * 24));
 
   // Flat lesson list for prev/next navigation (top-level first, then by section)
@@ -375,9 +375,9 @@ export default function CoursePlayer() {
           </button>
           <h2 className="font-semibold text-gray-900 text-sm leading-snug">{course.title}</h2>
           <div className="mt-2">
-            <Progress value={data.enrollment.progressPct} className="h-1.5" />
+            <Progress value={enrollment.progressPct} className="h-1.5" />
             <div className="flex items-center justify-between mt-1">
-              <p className="text-xs text-gray-500">{data.enrollment.progressPct}% complete</p>
+              <p className="text-xs text-gray-500">{enrollment.progressPct}% complete</p>
               {certData && (
                 <button
                   onClick={() => setShowCertDialog(true)}

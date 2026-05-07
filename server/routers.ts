@@ -412,6 +412,7 @@ export const appRouter = router({
     requestMagicLink: publicProcedure
       .input(z.object({
         email: z.string().email().max(320),
+        returnTo: z.string().max(500).optional(),
       }))
       .mutation(async ({ input }) => {
         const { getUserByEmail, setMagicLinkToken } = await import('./db');
@@ -432,7 +433,11 @@ export const appRouter = router({
         await setMagicLinkToken(user.id, token, expiry);
 
         const appUrl = process.env.VITE_APP_URL || 'https://app.allaboutultrasound.com';
-        const magicUrl = `${appUrl}/auth/magic?token=${token}`;
+        const safeReturnTo =
+          input.returnTo && input.returnTo.startsWith('/') && !input.returnTo.startsWith('//')
+            ? input.returnTo
+            : undefined;
+        const magicUrl = `${appUrl}/auth/magic?token=${token}${safeReturnTo ? `&returnTo=${encodeURIComponent(safeReturnTo)}` : ''}`;
 
         const firstName = (user.displayName || user.name || 'there').split(' ')[0];
         const emailPayload = buildMagicLinkEmail({ firstName, magicUrl });

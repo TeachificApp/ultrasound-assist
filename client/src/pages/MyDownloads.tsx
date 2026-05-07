@@ -14,7 +14,7 @@ import { Link } from "wouter";
 import { getLoginUrl } from "@/const";
 
 export default function MyDownloads() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { data: purchases, isLoading } = trpc.downloadsLearner.myPurchases.useQuery(
     undefined,
     { enabled: !!user }

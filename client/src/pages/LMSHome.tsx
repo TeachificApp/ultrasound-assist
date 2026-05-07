@@ -25,7 +25,8 @@ import {
 export default function LMSHome() {
   const { user, isAuthenticated } = useAuth();
   const { data: featuredCourses, isLoading: loadingFeatured } = trpc.lms.listFeatured.useQuery();
-  const { data: downloads, isLoading: loadingDownloads } = trpc.downloads.list.useQuery({ limit: 4 });
+  const { data: downloadsResult, isLoading: loadingDownloads } = trpc.downloads.list.useQuery({ limit: 4 });
+  const downloads = downloadsResult?.products ?? [];
 
   return (
     <div className="min-h-screen bg-gray-50/50">

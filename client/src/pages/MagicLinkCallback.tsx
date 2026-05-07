@@ -16,6 +16,12 @@ const LOGO = import.meta.env.VITE_APP_LOGO as string;
 
 type Status = "verifying" | "success" | "error";
 
+function getSafeReturnTo(): string {
+  const params = new URLSearchParams(window.location.search);
+  const returnTo = params.get("returnTo");
+  return returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/";
+}
+
 export default function MagicLinkCallback() {
   const [status, setStatus] = useState<Status>("verifying");
   const [errorMessage, setErrorMessage] = useState("");
@@ -51,7 +57,7 @@ export default function MagicLinkCallback() {
         setStatus("success");
         // Redirect to home after a short delay so the user sees the success state
         setTimeout(() => {
-          window.location.href = "/";
+          window.location.href = getSafeReturnTo();
         }, 1500);
       })
       .catch(() => {
