@@ -4,9 +4,106 @@
  * Covers: auth guard, listOverrides, upsertOverride, deleteOverride, clearImageField.
  * Note: uploadImage is not tested here as it requires a live S3 connection.
  */
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+
+const dbMock = vi.hoisted(() => {
+  type OverrideRow = Record<string, unknown> & { id: number };
+  const state = {
+    rows: [] as OverrideRow[],
+    nextId: 1,
+  };
+
+  function collectFilters(condition: unknown, filters: Record<string, unknown>) {
+    if (!condition || typeof condition !== "object") return;
+    const chunk = condition as {
+      queryChunks?: unknown[];
+      encoder?: { name?: string };
+      value?: unknown;
+    };
+    if (chunk.encoder?.name && "value" in chunk) {
+      filters[chunk.encoder.name] = chunk.value;
+      return;
+    }
+    if (Array.isArray(chunk.queryChunks)) {
+      for (const child of chunk.queryChunks) collectFilters(child, filters);
+    }
+  }
+
+  function filterRows(condition?: unknown) {
+    if (!condition) return [...state.rows];
+    const filters: Record<string, unknown> = {};
+    collectFilters(condition, filters);
+    return state.rows.filter((row) =>
+      Object.entries(filters).every(([key, value]) => row[key] === value)
+    );
+  }
+
+  function createSelectQuery() {
+    let condition: unknown;
+    const query = {
+      from: vi.fn(() => query),
+      where: vi.fn((nextCondition: unknown) => {
+        condition = nextCondition;
+        return query;
+      }),
+      orderBy: vi.fn(() => query),
+      limit: vi.fn((count: number) => Promise.resolve(filterRows(condition).slice(0, count))),
+      then: (resolve: (rows: OverrideRow[]) => unknown, reject?: (reason: unknown) => unknown) =>
+        Promise.resolve(filterRows(condition)).then(resolve, reject),
+    };
+    return query;
+  }
+
+  function createDb() {
+    return {
+      select: vi.fn(() => createSelectQuery()),
+      insert: vi.fn(() => ({
+        values: vi.fn((payload: Record<string, unknown>) => {
+          const id = state.nextId++;
+          state.rows.push({ id, ...payload });
+          return Promise.resolve([{ insertId: id, id }]);
+        }),
+      })),
+      update: vi.fn(() => ({
+        set: vi.fn((payload: Record<string, unknown>) => ({
+          where: vi.fn((condition: unknown) => {
+            const filters: Record<string, unknown> = {};
+            collectFilters(condition, filters);
+            for (const row of state.rows) {
+              if (Object.entries(filters).every(([key, value]) => row[key] === value)) {
+                Object.assign(row, payload);
+              }
+            }
+            return Promise.resolve(undefined);
+          }),
+        })),
+      })),
+      delete: vi.fn(() => ({
+        where: vi.fn((condition: unknown) => {
+          const filters: Record<string, unknown> = {};
+          collectFilters(condition, filters);
+          state.rows = state.rows.filter(
+            (row) => !Object.entries(filters).every(([key, value]) => row[key] === value)
+          );
+          return Promise.resolve(undefined);
+        }),
+      })),
+    };
+  }
+
+  return { state, createDb };
+});
+
+vi.mock("./db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./db")>();
+  return {
+    ...actual,
+    getDb: vi.fn(async () => dbMock.createDb()),
+    getUserRoles: vi.fn(async () => []),
+  };
+});
 
 // ─── Context helpers ──────────────────────────────────────────────────────────
 
@@ -52,6 +149,11 @@ function makeUnauthCtx(): TrpcContext {
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
+
+beforeEach(() => {
+  dbMock.state.rows = [];
+  dbMock.state.nextId = 1;
+});
 
 describe("scanCoachAdmin.listOverrides", () => {
   // listOverrides is a publicProcedure — accessible by all users including unauthenticated
