@@ -13,10 +13,13 @@
  *
  * Optional:
  *   DATABASE_URL or MYSQL_URL        Discover every stored Manus CDN URL in the DB
+ *   --manifest-file <path>           Include additional source URLs or relative keys from CSV/text
+ *   --no-explicit-manifest           Skip the built-in explicit manifest
  *   --manifest-only                  Upload only the explicit manifest below
  *   --dry-run                        Print planned copies without downloading/uploading
  */
 import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { readFile } from "node:fs/promises";
 import { createPool } from "mysql2/promise";
 
 const SOURCE_BASE =
@@ -47,10 +50,13 @@ const R2_SECRET_ACCESS_KEY =
   process.env.AWS_SECRET_ACCESS_KEY;
 const DATABASE_URL = process.env.DATABASE_URL ?? process.env.MYSQL_URL ?? process.env.railway_database_url;
 
-const args = new Set(process.argv.slice(2));
+const argv = process.argv.slice(2);
+const args = new Set(argv);
 const dryRun = args.has("--dry-run");
 const manifestOnly = args.has("--manifest-only");
+const includeExplicitManifest = !args.has("--no-explicit-manifest");
 const skipExisting = !args.has("--overwrite");
+const manifestFile = optionValue("--manifest-file", "--manifest", "--csv");
 
 const explicitManifest = [
   // Scan Coach Images
@@ -86,6 +92,24 @@ const explicitManifest = [
 
 function normalizeBase(base) {
   return base.endsWith("/") ? base : `${base}/`;
+}
+
+function optionValue(...names) {
+  for (const name of names) {
+    const index = argv.indexOf(name);
+    if (index !== -1) {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error(`${name} requires a file path`);
+      }
+      return value;
+    }
+
+    const prefix = `${name}=`;
+    const inline = argv.find((arg) => arg.startsWith(prefix));
+    if (inline) return inline.slice(prefix.length);
+  }
+  return null;
 }
 
 function parseR2BucketUrl(bucketUrl) {
@@ -124,6 +148,77 @@ function extractSourceUrls(value) {
   const escapedBase = SOURCE_BASE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\/$/, "\\/?");
   const regex = new RegExp(`${escapedBase}[^"'\\\\\\s<>)]+`, "g");
   return value.match(regex) ?? [];
+}
+
+function parseDelimitedCells(value) {
+  const cells = [];
+  let cell = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < value.length; index++) {
+    const char = value[index];
+    const next = value[index + 1];
+
+    if (char === '"' && inQuotes && next === '"') {
+      cell += '"';
+      index++;
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (!inQuotes && (char === "," || char === "\t" || char === ";" || char === "\n" || char === "\r")) {
+      cells.push(cell);
+      cell = "";
+      continue;
+    }
+
+    cell += char;
+  }
+
+  cells.push(cell);
+  return cells;
+}
+
+async function loadManifestUrls(filePath) {
+  if (!filePath) return [];
+
+  const buffer = await readFile(filePath);
+  if (buffer[0] === 0x50 && buffer[1] === 0x4b) {
+    throw new Error(
+      `${filePath} appears to be an XLSX/ZIP file. Export it as a real CSV/text file, or upload the original workbook without a .csv extension.`
+    );
+  }
+
+  const text = buffer.toString("utf8");
+  const urls = new Set(extractSourceUrls(text));
+  const base = normalizeBase(SOURCE_BASE);
+  const baseWithoutSlash = SOURCE_BASE.replace(/\/$/, "");
+  const headerNames = new Set(["url", "urls", "source", "source_url", "source url", "key", "path", "file", "file_url", "file url"]);
+
+  for (const rawCell of parseDelimitedCells(text)) {
+    const cell = rawCell.trim().replace(/^\uFEFF/, "");
+    if (!cell || headerNames.has(cell.toLowerCase())) continue;
+
+    if (cell.startsWith(base) || cell.startsWith(baseWithoutSlash)) {
+      urls.add(cell);
+      continue;
+    }
+
+    if (/^https?:\/\//i.test(cell)) {
+      console.warn(`[manifest] Skipping non-source URL: ${cell}`);
+      continue;
+    }
+
+    if (cell.includes("/")) {
+      urls.add(sourceUrlForKey(cell));
+    }
+  }
+
+  return Array.from(urls);
 }
 
 async function discoverDbUrls() {
@@ -212,9 +307,10 @@ async function copyAsset(client, bucket, item) {
 }
 
 async function main() {
-  const explicitUrls = explicitManifest.map(sourceUrlForKey);
+  const explicitUrls = includeExplicitManifest ? explicitManifest.map(sourceUrlForKey) : [];
+  const manifestUrls = await loadManifestUrls(manifestFile);
   const dbUrls = await discoverDbUrls();
-  const urls = Array.from(new Set([...explicitUrls, ...dbUrls]));
+  const urls = Array.from(new Set([...explicitUrls, ...manifestUrls, ...dbUrls]));
   const items = urls
     .map((sourceUrl) => {
       const key = keyFromSourceUrl(sourceUrl);
@@ -224,7 +320,8 @@ async function main() {
     .sort((a, b) => a.key.localeCompare(b.key));
 
   console.log(`Planned R2 migration items: ${items.length}`);
-  console.log(`Explicit manifest items: ${explicitManifest.length}`);
+  console.log(`Explicit manifest items: ${explicitUrls.length}`);
+  if (manifestFile) console.log(`Manifest file items: ${manifestUrls.length}`);
   if (!manifestOnly) console.log(`Discovered DB URLs: ${dbUrls.length}`);
 
   if (!dryRun && (!R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY)) {
