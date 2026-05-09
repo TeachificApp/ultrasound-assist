@@ -189,7 +189,7 @@ async function loadManifestUrls(filePath) {
   const buffer = await readFile(filePath);
   if (buffer[0] === 0x50 && buffer[1] === 0x4b) {
     throw new Error(
-      `${filePath} appears to be an XLSX/ZIP file. Export it as a real CSV/text file, or upload the original workbook without a .csv extension.`
+      `${filePath} appears to be an XLSX/ZIP file. This script expects a real CSV/text file; export the workbook as CSV before passing it to --manifest-file.`
     );
   }
 
