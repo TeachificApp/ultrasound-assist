@@ -3,19 +3,49 @@
 
 import { ENV } from './_core/env';
 
-type StorageConfig = { baseUrl: string; apiKey: string };
+type ForgeStorageConfig = { provider: "forge"; baseUrl: string; apiKey: string };
+type R2StorageConfig = {
+  provider: "r2";
+  endpoint: string;
+  bucket: string;
+  publicBaseUrl: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+};
+type StorageConfig = ForgeStorageConfig | R2StorageConfig;
 
 function getStorageConfig(): StorageConfig {
+  const r2Config = getR2StorageConfig();
+  if (r2Config) return r2Config;
+
   const baseUrl = ENV.forgeApiUrl;
   const apiKey = ENV.forgeApiKey;
-
   if (!baseUrl || !apiKey) {
     throw new Error(
-      "Storage proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
+      "Storage credentials missing: set Cloudflare R2 credentials (CLOUDFLARE_R2_ACCESS_KEY_ID and CLOUDFLARE_R2_SECRET_ACCESS_KEY) or storage proxy credentials (BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY)"
     );
   }
 
-  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
+  return { provider: "forge", baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
+}
+
+function getR2StorageConfig(): R2StorageConfig | null {
+  if (!ENV.r2AccessKeyId || !ENV.r2SecretAccessKey) return null;
+
+  const bucketUrl = new URL(ENV.r2BucketUrl);
+  const bucketFromPath = bucketUrl.pathname.split("/").filter(Boolean)[0];
+  bucketUrl.pathname = "/";
+  bucketUrl.search = "";
+  bucketUrl.hash = "";
+
+  return {
+    provider: "r2",
+    endpoint: bucketUrl.origin,
+    bucket: process.env.CLOUDFLARE_R2_BUCKET ?? process.env.R2_BUCKET ?? bucketFromPath ?? "ultrasound-assist",
+    publicBaseUrl: ENV.r2PublicBaseUrl.replace(/\/+$/, ""),
+    accessKeyId: ENV.r2AccessKeyId,
+    secretAccessKey: ENV.r2SecretAccessKey,
+  };
 }
 
 function buildUploadUrl(baseUrl: string, relKey: string): URL {
@@ -49,6 +79,14 @@ function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
 }
 
+function buildPublicR2Url(publicBaseUrl: string, relKey: string): string {
+  const encodedKey = normalizeKey(relKey)
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  return `${publicBaseUrl.replace(/\/+$/, "")}/${encodedKey}`;
+}
+
 function toFormData(
   data: Buffer | Uint8Array | string,
   contentType: string,
@@ -72,8 +110,32 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  const { baseUrl, apiKey } = getStorageConfig();
+  const config = getStorageConfig();
   const key = normalizeKey(relKey);
+
+  if (config.provider === "r2") {
+    const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+    const client = new S3Client({
+      region: "auto",
+      endpoint: config.endpoint,
+      forcePathStyle: true,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      },
+    });
+
+    await client.send(new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: data,
+      ContentType: contentType,
+    }));
+
+    return { key, url: buildPublicR2Url(config.publicBaseUrl, key) };
+  }
+
+  const { baseUrl, apiKey } = config;
   const uploadUrl = buildUploadUrl(baseUrl, key);
   const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
   const response = await fetch(uploadUrl, {
@@ -93,8 +155,12 @@ export async function storagePut(
 }
 
 export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
-  const { baseUrl, apiKey } = getStorageConfig();
+  const config = getStorageConfig();
   const key = normalizeKey(relKey);
+  if (config.provider === "r2") {
+    return { key, url: buildPublicR2Url(config.publicBaseUrl, key) };
+  }
+  const { baseUrl, apiKey } = config;
   return {
     key,
     url: await buildDownloadUrl(baseUrl, key, apiKey),
@@ -102,8 +168,25 @@ export async function storageGet(relKey: string): Promise<{ key: string; url: st
 }
 
 export async function storageDelete(relKey: string): Promise<void> {
-  const { baseUrl, apiKey } = getStorageConfig();
+  const config = getStorageConfig();
   const key = normalizeKey(relKey);
+
+  if (config.provider === "r2") {
+    const { S3Client, DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+    const client = new S3Client({
+      region: "auto",
+      endpoint: config.endpoint,
+      forcePathStyle: true,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      },
+    });
+    await client.send(new DeleteObjectCommand({ Bucket: config.bucket, Key: key }));
+    return;
+  }
+
+  const { baseUrl, apiKey } = config;
   const deleteUrl = new URL("v1/storage/delete", ensureTrailingSlash(baseUrl));
   deleteUrl.searchParams.set("path", key);
   const response = await fetch(deleteUrl, {
