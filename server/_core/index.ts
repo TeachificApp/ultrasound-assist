@@ -50,6 +50,12 @@ async function startServer() {
   // Trust the reverse proxy so req.protocol reflects HTTPS and SameSite=None;Secure cookies work
   app.set("trust proxy", 1);
   const server = createServer(app);
+
+  // Register raw-body webhooks before JSON/urlencoded parsers. SendGrid and
+  // Stripe signatures are computed against the exact request body bytes.
+  registerStripeWebhook(app);
+  registerSendGridWebhook(app);
+
   // Configure body parser with larger size limit for file uploads
   // No body-parser limit for chunked media uploads — multer handles streaming directly
   app.use(express.json({ limit: "100mb" }));
@@ -60,10 +66,6 @@ async function startServer() {
   registerChatRoutes(app);
   // Thinkific webhook for live course sync
   registerThinkificWebhook(app);
-  // Stripe webhook for Concierge purchase activation
-  registerStripeWebhook(app);
-  // SendGrid Event Webhook for unsubscribe/spamreport sync
-  registerSendGridWebhook(app);
   // Case media upload endpoint (multipart/form-data)
   registerUploadCaseMediaRoute(app);
   // Navigator section image upload endpoint (admin only)

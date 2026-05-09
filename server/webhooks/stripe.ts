@@ -254,6 +254,10 @@ export function registerStripeWebhook(app: Express) {
     "/api/webhooks/stripe",
     // Express raw body middleware for this route only
     (req: Request, res: Response, next) => {
+      if ((req as Request & { rawBody?: string }).rawBody !== undefined) {
+        next();
+        return;
+      }
       let data = "";
       req.setEncoding("utf8");
       req.on("data", (chunk: string) => { data += chunk; });

@@ -161,6 +161,10 @@ export function registerSendGridWebhook(app: Express) {
     "/api/webhooks/sendgrid",
     // Collect raw body for signature verification
     (req: Request, _res: Response, next) => {
+      if ((req as Request & { rawBody?: string }).rawBody !== undefined) {
+        next();
+        return;
+      }
       let data = "";
       req.setEncoding("utf8");
       req.on("data", (chunk: string) => { data += chunk; });

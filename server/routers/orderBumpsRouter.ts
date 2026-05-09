@@ -7,11 +7,12 @@ import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { sql, eq, and } from "drizzle-orm";
 import { orderBumps, orderBumpConversions } from "../../drizzle/schema";
+import { getDb } from "../db";
 
-// Helper to get DB
-async function getDb() {
-  const { drizzle } = await import("drizzle-orm/mysql2");
-  return drizzle(process.env.DATABASE_URL!);
+async function requireDb() {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+  return db;
 }
 
 // ─── Admin Router ────────────────────────────────────────────────────────────
@@ -19,7 +20,7 @@ export const orderBumpsAdminRouter = router({
   /** List all order bumps */
   list: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-    const db = await getDb();
+    const db = await requireDb();
     const rows = await db.select().from(orderBumps).orderBy(orderBumps.createdAt);
     return rows;
   }),
@@ -29,7 +30,7 @@ export const orderBumpsAdminRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const db = await getDb();
+      const db = await requireDb();
       const [row] = await db.select().from(orderBumps).where(eq(orderBumps.id, input.id));
       if (!row) throw new TRPCError({ code: "NOT_FOUND" });
       return row;
@@ -56,7 +57,7 @@ export const orderBumpsAdminRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const db = await getDb();
+      const db = await requireDb();
       const [result] = await db.insert(orderBumps).values({
         triggerType: input.triggerType,
         triggerProductId: input.triggerProductId,
@@ -99,7 +100,7 @@ export const orderBumpsAdminRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const db = await getDb();
+      const db = await requireDb();
       const { id, ...data } = input;
       await db.update(orderBumps).set(data).where(eq(orderBumps.id, id));
       return { success: true };
@@ -110,7 +111,7 @@ export const orderBumpsAdminRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const db = await getDb();
+      const db = await requireDb();
       await db.delete(orderBumps).where(eq(orderBumps.id, input.id));
       return { success: true };
     }),
@@ -120,7 +121,7 @@ export const orderBumpsAdminRouter = router({
     .input(z.object({ bumpId: z.number() }))
     .query(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const db = await getDb();
+      const db = await requireDb();
       const [bump] = await db.select().from(orderBumps).where(eq(orderBumps.id, input.bumpId));
       if (!bump) throw new TRPCError({ code: "NOT_FOUND" });
       return {
@@ -142,7 +143,7 @@ export const orderBumpsPublicRouter = router({
       timing: z.enum(["before_checkout", "after_checkout"]).optional(),
     }))
     .query(async ({ input }) => {
-      const db = await getDb();
+      const db = await requireDb();
       const conditions = [
         eq(orderBumps.triggerType, input.triggerType),
         eq(orderBumps.triggerProductId, input.triggerProductId),
@@ -159,7 +160,7 @@ export const orderBumpsPublicRouter = router({
   recordImpression: publicProcedure
     .input(z.object({ bumpId: z.number() }))
     .mutation(async ({ input }) => {
-      const db = await getDb();
+      const db = await requireDb();
       await db.execute(sql`UPDATE order_bumps SET impressions = impressions + 1 WHERE id = ${input.bumpId}`);
       return { success: true };
     }),
@@ -172,7 +173,7 @@ export const orderBumpsPublicRouter = router({
       triggerOrderId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = await requireDb();
       // Get the bump details
       const [bump] = await db.select().from(orderBumps).where(eq(orderBumps.id, input.bumpId));
       if (!bump) throw new TRPCError({ code: "NOT_FOUND", message: "Order bump not found" });

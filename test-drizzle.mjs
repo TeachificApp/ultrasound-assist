@@ -2,7 +2,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { users } from "./drizzle/schema.ts";
 import { eq } from "drizzle-orm";
 
-const url = process.env.DATABASE_URL;
+const url = process.env.DATABASE_URL || process.env.MYSQL_URL;
 console.log("Testing drizzle connection...");
 try {
   const db = drizzle(url);

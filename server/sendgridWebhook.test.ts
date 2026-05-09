@@ -58,6 +58,14 @@ function buildApp() {
   return app;
 }
 
+function buildAppWithGlobalParsers() {
+  const app = express();
+  registerSendGridWebhook(app);
+  app.use(express.json({ limit: "100mb" }));
+  app.use(express.urlencoded({ limit: "100mb", extended: true }));
+  return app;
+}
+
 const makeEvent = (event: string, email = "test@example.com") => [
   { email, event, timestamp: Math.floor(Date.now() / 1000), sg_event_id: "evt-1" },
 ];
@@ -71,6 +79,15 @@ describe("SendGrid Event Webhook", () => {
 
   it("returns 200 and received count for a valid unsubscribe event", async () => {
     const res = await request(buildApp())
+      .post("/api/webhooks/sendgrid")
+      .set("Content-Type", "application/json")
+      .send(JSON.stringify(makeEvent("unsubscribe")));
+    expect(res.status).toBe(200);
+    expect(res.body.received).toBe(1);
+  });
+
+  it("handles raw webhook bodies before global JSON parsers are applied", async () => {
+    const res = await request(buildAppWithGlobalParsers())
       .post("/api/webhooks/sendgrid")
       .set("Content-Type", "application/json")
       .send(JSON.stringify(makeEvent("unsubscribe")));
