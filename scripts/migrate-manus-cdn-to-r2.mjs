@@ -24,10 +24,13 @@ const SOURCE_BASE =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/";
 const R2_BUCKET_URL =
   process.env.CLOUDFLARE_R2_BUCKET_URL ??
+  process.env.CLOUDFLARE_R2_BUCKET_API ??
+  process.env.CLOUDFLARE_R2_S3 ??
   process.env.R2_BUCKET_URL ??
   "https://926e046281eccc776864fd105e322ac8.r2.cloudflarestorage.com/ultrasound-assist";
 const R2_PUBLIC_BASE_URL =
   process.env.CLOUDFLARE_R2_PUBLIC_BASE_URL ??
+  process.env.CLOUDFLARE_PUBLIC_DEVEL_URL ??
   process.env.R2_PUBLIC_BASE_URL ??
   "https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev";
 const R2_ACCESS_KEY_ID =
@@ -92,8 +95,13 @@ function parseR2BucketUrl(bucketUrl) {
   parsed.search = "";
   parsed.hash = "";
   return {
-    endpoint: parsed.origin,
-    bucket: process.env.CLOUDFLARE_R2_BUCKET ?? process.env.R2_BUCKET ?? bucketFromPath ?? "ultrasound-assist",
+    endpoint: (process.env.CLOUDFLARE_R2_ENDPOINT ?? "").replace(/\/+$/, "") || parsed.origin,
+    bucket:
+      process.env.CLOUDFLARE_R2_BUCKET ??
+      process.env.CLOUDFLARE_BUCKET_NAME ??
+      process.env.R2_BUCKET ??
+      bucketFromPath ??
+      "ultrasound-assist",
   };
 }
 

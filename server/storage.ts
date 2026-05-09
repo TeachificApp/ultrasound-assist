@@ -40,8 +40,8 @@ function getR2StorageConfig(): R2StorageConfig | null {
 
   return {
     provider: "r2",
-    endpoint: bucketUrl.origin,
-    bucket: process.env.CLOUDFLARE_R2_BUCKET ?? process.env.R2_BUCKET ?? bucketFromPath ?? "ultrasound-assist",
+    endpoint: ENV.r2Endpoint.replace(/\/+$/, "") || bucketUrl.origin,
+    bucket: ENV.r2Bucket || bucketFromPath || "ultrasound-assist",
     publicBaseUrl: ENV.r2PublicBaseUrl.replace(/\/+$/, ""),
     accessKeyId: ENV.r2AccessKeyId,
     secretAccessKey: ENV.r2SecretAccessKey,

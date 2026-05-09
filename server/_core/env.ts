@@ -13,10 +13,13 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   r2BucketUrl:
     process.env.CLOUDFLARE_R2_BUCKET_URL ??
+    process.env.CLOUDFLARE_R2_BUCKET_API ??
+    process.env.CLOUDFLARE_R2_S3 ??
     process.env.R2_BUCKET_URL ??
     "https://926e046281eccc776864fd105e322ac8.r2.cloudflarestorage.com/ultrasound-assist",
   r2PublicBaseUrl:
     process.env.CLOUDFLARE_R2_PUBLIC_BASE_URL ??
+    process.env.CLOUDFLARE_PUBLIC_DEVEL_URL ??
     process.env.R2_PUBLIC_BASE_URL ??
     "https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev",
   r2AccessKeyId:
@@ -32,6 +35,12 @@ export const ENV = {
     process.env.CLOUDFARER2_TOKENVALUE ??
     process.env.R2_SECRET_ACCESS_KEY ??
     process.env.AWS_SECRET_ACCESS_KEY ??
+    "",
+  r2Endpoint: process.env.CLOUDFLARE_R2_ENDPOINT ?? "",
+  r2Bucket:
+    process.env.CLOUDFLARE_R2_BUCKET ??
+    process.env.CLOUDFLARE_BUCKET_NAME ??
+    process.env.R2_BUCKET ??
     "",
   thinkificApiKey: process.env.THINKIFIC_API_KEY ?? "",
   thinkificSubdomain: process.env.THINKIFIC_SUBDOMAIN ?? "",
