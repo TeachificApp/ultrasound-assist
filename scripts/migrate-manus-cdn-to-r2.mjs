@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import "dotenv/config";
 import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -43,6 +43,8 @@ const STORAGE_KEY_PREFIX = "migrated-manus-cdn";
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
 const rootDir = process.cwd();
+
+loadDotEnv(path.join(rootDir, ".env"));
 
 main().catch((error) => {
   console.error(error instanceof Error ? error.message : error);
@@ -242,4 +244,42 @@ function sanitizeFilename(filename) {
 
 function stripTrailingPunctuation(url) {
   return url.replace(/[.,;:]+$/, "");
+}
+
+function loadDotEnv(filePath) {
+  if (!existsSync(filePath)) {
+    return;
+  }
+
+  const contents = readFileSync(filePath, "utf8");
+  for (const line of contents.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+
+    const separator = trimmed.indexOf("=");
+    if (separator === -1) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, separator).trim();
+    const rawValue = trimmed.slice(separator + 1).trim();
+    if (!key || process.env[key] !== undefined) {
+      continue;
+    }
+
+    process.env[key] = unquoteEnvValue(rawValue);
+  }
+}
+
+function unquoteEnvValue(value) {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+
+  return value;
 }
