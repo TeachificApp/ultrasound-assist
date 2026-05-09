@@ -45,7 +45,7 @@ describe("storage R2 configuration", () => {
 
   afterEach(() => {
     restoreEnv();
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
     vi.resetModules();
   });
 
