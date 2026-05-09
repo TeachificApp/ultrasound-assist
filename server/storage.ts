@@ -1,11 +1,21 @@
-// Preconfigured storage helpers for Manus WebDev templates
-// Uses the Biz-provided storage proxy (Authorization: Bearer <token>)
+// Storage helpers used by uploads across the app. Prefer Cloudflare R2 so
+// generated media URLs are independent of the Manus/Forge runtime.
 
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { ENV } from './_core/env';
 
-type StorageConfig = { baseUrl: string; apiKey: string };
+type ForgeStorageConfig = { baseUrl: string; apiKey: string };
+type R2StorageConfig = {
+  endpoint: string;
+  bucket: string;
+  publicBaseUrl: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+};
 
-function getStorageConfig(): StorageConfig {
+let r2Client: S3Client | null = null;
+
+function getForgeStorageConfig(): ForgeStorageConfig {
   const baseUrl = ENV.forgeApiUrl;
   const apiKey = ENV.forgeApiKey;
 
@@ -16,6 +26,74 @@ function getStorageConfig(): StorageConfig {
   }
 
   return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
+}
+
+function getR2StorageConfig(): R2StorageConfig | null {
+  const bucketUrl =
+    process.env.CLOUDFLARE_R2_BUCKET_URL ??
+    process.env.CLOUDFLARE_R2_BUCKET_API ??
+    process.env.CLOUDFLARE_R2_S3 ??
+    process.env.R2_BUCKET_URL ??
+    "";
+  const endpoint =
+    (process.env.CLOUDFLARE_R2_ENDPOINT ?? process.env.R2_ENDPOINT ?? "").replace(/\/+$/, "");
+  const publicBaseUrl =
+    process.env.CLOUDFLARE_R2_PUBLIC_BASE_URL ??
+    process.env.CLOUDFLARE_PUBLIC_DEVEL_URL ??
+    process.env.R2_PUBLIC_BASE_URL ??
+    "";
+  const accessKeyId =
+    process.env.CLOUDFLARE_R2_ACCESS_KEY_ID ??
+    process.env.CLOUDFARE_R2_ACCESS_KEY_ID ??
+    process.env.R2_ACCESS_KEY_ID ??
+    process.env.AWS_ACCESS_KEY_ID ??
+    "";
+  const secretAccessKey =
+    process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY ??
+    process.env.CLOUDFLARE_SECRET_ACCESS_KEY ??
+    process.env.CLOUDFARE_SECRET_ACCESS_KEY ??
+    process.env.CLOUDFARER2_TOKENVALUE ??
+    process.env.R2_SECRET_ACCESS_KEY ??
+    process.env.AWS_SECRET_ACCESS_KEY ??
+    "";
+
+  let parsedEndpoint = endpoint;
+  let bucket =
+    process.env.CLOUDFLARE_R2_BUCKET ??
+    process.env.CLOUDFLARE_BUCKET_NAME ??
+    process.env.R2_BUCKET ??
+    "";
+
+  if (bucketUrl) {
+    const parsed = new URL(bucketUrl);
+    parsedEndpoint ||= parsed.origin;
+    bucket ||= parsed.pathname.split("/").filter(Boolean)[0] ?? "";
+  }
+
+  if (!parsedEndpoint || !bucket || !publicBaseUrl || !accessKeyId || !secretAccessKey) {
+    return null;
+  }
+
+  return {
+    endpoint: parsedEndpoint,
+    bucket,
+    publicBaseUrl: publicBaseUrl.replace(/\/+$/, ""),
+    accessKeyId,
+    secretAccessKey,
+  };
+}
+
+function getR2Client(config: R2StorageConfig) {
+  r2Client ??= new S3Client({
+    region: process.env.CLOUDFLARE_R2_REGION ?? process.env.R2_REGION ?? "auto",
+    endpoint: config.endpoint,
+    forcePathStyle: true,
+    credentials: {
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+    },
+  });
+  return r2Client;
 }
 
 function buildUploadUrl(baseUrl: string, relKey: string): URL {
@@ -49,6 +127,10 @@ function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
 }
 
+function publicUrlForKey(publicBaseUrl: string, key: string) {
+  return `${publicBaseUrl}/${key.split("/").map(encodeURIComponent).join("/")}`;
+}
+
 function toFormData(
   data: Buffer | Uint8Array | string,
   contentType: string,
@@ -72,8 +154,21 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  const { baseUrl, apiKey } = getStorageConfig();
   const key = normalizeKey(relKey);
+  const r2Config = getR2StorageConfig();
+
+  if (r2Config) {
+    const client = getR2Client(r2Config);
+    await client.send(new PutObjectCommand({
+      Bucket: r2Config.bucket,
+      Key: key,
+      Body: typeof data === "string" ? Buffer.from(data) : Buffer.from(data),
+      ContentType: contentType,
+    }));
+    return { key, url: publicUrlForKey(r2Config.publicBaseUrl, key) };
+  }
+
+  const { baseUrl, apiKey } = getForgeStorageConfig();
   const uploadUrl = buildUploadUrl(baseUrl, key);
   const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
   const response = await fetch(uploadUrl, {
@@ -93,8 +188,13 @@ export async function storagePut(
 }
 
 export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
-  const { baseUrl, apiKey } = getStorageConfig();
   const key = normalizeKey(relKey);
+  const r2Config = getR2StorageConfig();
+  if (r2Config) {
+    return { key, url: publicUrlForKey(r2Config.publicBaseUrl, key) };
+  }
+
+  const { baseUrl, apiKey } = getForgeStorageConfig();
   return {
     key,
     url: await buildDownloadUrl(baseUrl, key, apiKey),
@@ -102,8 +202,15 @@ export async function storageGet(relKey: string): Promise<{ key: string; url: st
 }
 
 export async function storageDelete(relKey: string): Promise<void> {
-  const { baseUrl, apiKey } = getStorageConfig();
   const key = normalizeKey(relKey);
+  const r2Config = getR2StorageConfig();
+  if (r2Config) {
+    const client = getR2Client(r2Config);
+    await client.send(new DeleteObjectCommand({ Bucket: r2Config.bucket, Key: key }));
+    return;
+  }
+
+  const { baseUrl, apiKey } = getForgeStorageConfig();
   const deleteUrl = new URL("v1/storage/delete", ensureTrailingSlash(baseUrl));
   deleteUrl.searchParams.set("path", key);
   const response = await fetch(deleteUrl, {

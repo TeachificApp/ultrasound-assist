@@ -1280,7 +1280,7 @@ export default function QuickFire() {
                       >
                         {(prefKey === 'pocus') ? (
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isEnabled ? "bg-[#189aa1]" : "bg-gray-200"}`}>
-                            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/etVPnUidWNWG8W4GHnRqzv/pocus-icon_0b2e6eff.png" alt="POCUS" className="w-5 h-5 object-contain" />
+                            <img src="https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev/static/pocus-icon_0b2e6eff.png" alt="POCUS" className="w-5 h-5 object-contain" />
                           </div>
                         ) : (
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isEnabled ? "bg-[#189aa1]" : "bg-gray-200"}`}>
@@ -1450,7 +1450,7 @@ export default function QuickFire() {
                               <div className="flex items-center gap-2">
                                 {(cat.isPocus) ? (
                                   <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isDone ? (isCorrect ? 'bg-green-500' : 'bg-orange-400') : 'bg-[#189aa1]'}`}>
-                                    <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/etVPnUidWNWG8W4GHnRqzv/pocus-icon_0b2e6eff.png" alt="POCUS" className="w-5 h-5 object-contain" />
+                                    <img src="https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev/static/pocus-icon_0b2e6eff.png" alt="POCUS" className="w-5 h-5 object-contain" />
                                   </div>
                                 ) : (
                                   <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isDone ? (isCorrect ? "bg-green-500" : "bg-orange-400") : "bg-[#189aa1]"}`}>

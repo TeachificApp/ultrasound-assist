@@ -23,9 +23,9 @@ const BRAND = "#189aa1";
 const BRAND_DARK = "#0d3d44";
 const BRAND_AQUA = "#4ad9e0";
 const LOGO_URL =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/aaus_icon_192_teal_f0c966ce.png";
+  "https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev/aaus_icon_192_teal_f0c966ce.png";
 const HERO_URL_DARK =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/daily-challenge-banner-v3_AAUS_ccb55bf0.webp";
+  "https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev/daily-challenge-banner-v3_AAUS_ccb55bf0.webp";
 const HERO_URL_LIGHT = HERO_URL_DARK;
 
 // ---- Theme tokens -----------------------------------------------------------

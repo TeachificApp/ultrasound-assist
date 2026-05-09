@@ -249,7 +249,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Logo */}
         <div className="flex items-center gap-2 px-4 py-4 border-b border-white/10">
           <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/aaus_logo_ring_01cc7ccd.webp"
+            src="https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev/aaus_logo_ring_01cc7ccd.webp"
             alt="All About Ultrasound™"
             className="w-12 h-12 object-contain flex-shrink-0"
           />

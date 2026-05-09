@@ -110,7 +110,7 @@ export default function GetAppBanner() {
         {/* Left: icon + text */}
         <div className="flex items-center gap-3 min-w-0">
           <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/aaus_icon_192_2af50158.png"
+            src="https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev/aaus_icon_192_2af50158.png"
             alt="UltrasoundAssist"
             className="w-10 h-10 rounded-xl flex-shrink-0"
           />
@@ -160,7 +160,7 @@ export default function GetAppBanner() {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/aaus_icon_192_2af50158.png"
+              src="https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev/aaus_icon_192_2af50158.png"
               alt="UltrasoundAssist"
               className="w-16 h-16 rounded-2xl mx-auto mb-4"
             />

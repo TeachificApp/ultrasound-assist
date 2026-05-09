@@ -170,7 +170,7 @@ export default function Home() {
         <div
           className="absolute inset-0 opacity-20"
           style={{
-            backgroundImage: `url("https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/ultrasound-hero-probe-3bWMAQMJw9YFHoPXwbt8bZ.webp")`,
+            backgroundImage: `url("https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev/ultrasound-hero-probe-3bWMAQMJw9YFHoPXwbt8bZ.webp")`,
             backgroundSize: "cover",
             backgroundPosition: "center right",
           }}

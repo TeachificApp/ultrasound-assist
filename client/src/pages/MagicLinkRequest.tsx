@@ -40,7 +40,7 @@ export default function MagicLinkRequest() {
             style={{ background: "linear-gradient(135deg, #0e1e2e 0%, #0e4a50 60%, #189aa1 100%)" }}
           >
             <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
-              <img src={LOGO || "https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/aaus_logo_ring_01cc7ccd.webp"} alt="All About Ultrasound™" className="w-8 h-8 object-contain" />
+              <img src={LOGO || "https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev/aaus_logo_ring_01cc7ccd.webp"} alt="All About Ultrasound™" className="w-8 h-8 object-contain" />
             </div>
             <h1 className="text-xl font-bold text-white" style={{ fontFamily: "Merriweather, serif" }}>
               All About Ultrasound™

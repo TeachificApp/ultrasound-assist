@@ -97,7 +97,7 @@ export default function LMSLayout({ children }: { children: React.ReactNode }) {
         {/* Header */}
         <div className="px-4 py-5 flex items-center gap-3 border-b border-white/10">
           <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/aaus_logo_ring_01cc7ccd.webp"
+            src="https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev/aaus_logo_ring_01cc7ccd.webp"
             alt="All About Ultrasound"
             className="w-10 h-10 rounded-full"
           />
