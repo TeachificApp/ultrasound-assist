@@ -1,6 +1,6 @@
 import { createPool } from "mysql2/promise";
 
-const url = process.env.DATABASE_URL || process.env.MYSQL_URL || "";
+const url = process.env.DATABASE_URL || process.env.MYSQL_URL || process.env.railway_database_url || "";
 console.log("DB URL set:", !!url);
 if (!url) {
   console.log("DATABASE_URL/MYSQL_URL is not set");

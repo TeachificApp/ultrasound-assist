@@ -1,7 +1,11 @@
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",
-  databaseUrl: process.env.DATABASE_URL ?? process.env.MYSQL_URL ?? "",
+  databaseUrl:
+    process.env.DATABASE_URL ??
+    process.env.MYSQL_URL ??
+    process.env.railway_database_url ??
+    "",
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
   isProduction: process.env.NODE_ENV === "production",
@@ -17,11 +21,15 @@ export const ENV = {
     "https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev",
   r2AccessKeyId:
     process.env.CLOUDFLARE_R2_ACCESS_KEY_ID ??
+    process.env.CLOUDFARE_R2_ACCESS_KEY_ID ??
     process.env.R2_ACCESS_KEY_ID ??
     process.env.AWS_ACCESS_KEY_ID ??
     "",
   r2SecretAccessKey:
     process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY ??
+    process.env.CLOUDFLARE_SECRET_ACCESS_KEY ??
+    process.env.CLOUDFARE_SECRET_ACCESS_KEY ??
+    process.env.CLOUDFARER2_TOKENVALUE ??
     process.env.R2_SECRET_ACCESS_KEY ??
     process.env.AWS_SECRET_ACCESS_KEY ??
     "",

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
 const originalMysqlUrl = process.env.MYSQL_URL;
+const originalRailwayDatabaseUrl = process.env.railway_database_url;
 
 describe("environment configuration", () => {
   afterEach(() => {
@@ -15,6 +16,11 @@ describe("environment configuration", () => {
     } else {
       delete process.env.MYSQL_URL;
     }
+    if (originalRailwayDatabaseUrl) {
+      process.env.railway_database_url = originalRailwayDatabaseUrl;
+    } else {
+      delete process.env.railway_database_url;
+    }
     vi.resetModules();
   });
 
@@ -26,6 +32,17 @@ describe("environment configuration", () => {
     const { ENV } = await import("./_core/env");
 
     expect(ENV.databaseUrl).toBe("mysql://railway.example/db");
+  });
+
+  it("supports the lowercase railway_database_url secret name", async () => {
+    delete process.env.DATABASE_URL;
+    delete process.env.MYSQL_URL;
+    process.env.railway_database_url = "mysql://lowercase.example/db";
+    vi.resetModules();
+
+    const { ENV } = await import("./_core/env");
+
+    expect(ENV.databaseUrl).toBe("mysql://lowercase.example/db");
   });
 
   it("prefers DATABASE_URL when both database variables are set", async () => {

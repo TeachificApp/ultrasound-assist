@@ -14,7 +14,9 @@ const originalEnv = {
   BUILT_IN_FORGE_API_URL: process.env.BUILT_IN_FORGE_API_URL,
   BUILT_IN_FORGE_API_KEY: process.env.BUILT_IN_FORGE_API_KEY,
   CLOUDFLARE_R2_ACCESS_KEY_ID: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
+  CLOUDFARE_R2_ACCESS_KEY_ID: process.env.CLOUDFARE_R2_ACCESS_KEY_ID,
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+  CLOUDFLARE_SECRET_ACCESS_KEY: process.env.CLOUDFLARE_SECRET_ACCESS_KEY,
   CLOUDFLARE_R2_BUCKET_URL: process.env.CLOUDFLARE_R2_BUCKET_URL,
   CLOUDFLARE_R2_PUBLIC_BASE_URL: process.env.CLOUDFLARE_R2_PUBLIC_BASE_URL,
   CLOUDFLARE_R2_BUCKET: process.env.CLOUDFLARE_R2_BUCKET,
@@ -35,6 +37,8 @@ describe("storage R2 configuration", () => {
     delete process.env.BUILT_IN_FORGE_API_URL;
     delete process.env.BUILT_IN_FORGE_API_KEY;
     delete process.env.CLOUDFLARE_R2_BUCKET;
+    delete process.env.CLOUDFARE_R2_ACCESS_KEY_ID;
+    delete process.env.CLOUDFLARE_SECRET_ACCESS_KEY;
     process.env.CLOUDFLARE_R2_ACCESS_KEY_ID = "r2-access";
     process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY = "r2-secret";
     process.env.CLOUDFLARE_R2_BUCKET_URL = "https://926e046281eccc776864fd105e322ac8.r2.cloudflarestorage.com/ultrasound-assist";
@@ -98,5 +102,25 @@ describe("storage R2 configuration", () => {
       Key: "uploads/test.png",
     });
     expect(awsMock.send).toHaveBeenCalledTimes(1);
+  });
+
+  it("supports the Cloudflare secret aliases shown in Cursor secrets", async () => {
+    delete process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
+    delete process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
+    process.env.CLOUDFARE_R2_ACCESS_KEY_ID = "alias-access";
+    process.env.CLOUDFLARE_SECRET_ACCESS_KEY = "alias-secret";
+    vi.resetModules();
+
+    const { storagePut } = await import("./storage");
+    const { S3Client } = await import("@aws-sdk/client-s3");
+
+    await storagePut("uploads/alias.png", Buffer.from("image"), "image/png");
+
+    expect(S3Client).toHaveBeenCalledWith(expect.objectContaining({
+      credentials: {
+        accessKeyId: "alias-access",
+        secretAccessKey: "alias-secret",
+      },
+    }));
   });
 });

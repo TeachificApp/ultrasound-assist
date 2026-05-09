@@ -32,13 +32,17 @@ const R2_PUBLIC_BASE_URL =
   "https://pub-1f4b81c70d1f49cb8817cc2abbb92288.r2.dev";
 const R2_ACCESS_KEY_ID =
   process.env.CLOUDFLARE_R2_ACCESS_KEY_ID ??
+  process.env.CLOUDFARE_R2_ACCESS_KEY_ID ??
   process.env.R2_ACCESS_KEY_ID ??
   process.env.AWS_ACCESS_KEY_ID;
 const R2_SECRET_ACCESS_KEY =
   process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY ??
+  process.env.CLOUDFLARE_SECRET_ACCESS_KEY ??
+  process.env.CLOUDFARE_SECRET_ACCESS_KEY ??
+  process.env.CLOUDFARER2_TOKENVALUE ??
   process.env.R2_SECRET_ACCESS_KEY ??
   process.env.AWS_SECRET_ACCESS_KEY;
-const DATABASE_URL = process.env.DATABASE_URL ?? process.env.MYSQL_URL;
+const DATABASE_URL = process.env.DATABASE_URL ?? process.env.MYSQL_URL ?? process.env.railway_database_url;
 
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
