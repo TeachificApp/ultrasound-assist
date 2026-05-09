@@ -44,7 +44,14 @@ const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
 const rootDir = process.cwd();
 
-loadDotEnv(path.join(rootDir, ".env"));
+for (const envFile of [
+  ".env",
+  ".env.local",
+  ".env.development.local",
+  ".env.production.local",
+]) {
+  loadDotEnv(path.join(rootDir, envFile));
+}
 
 main().catch((error) => {
   console.error(error instanceof Error ? error.message : error);
