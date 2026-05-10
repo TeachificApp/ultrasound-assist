@@ -7,7 +7,8 @@ import { useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { THINKIFIC_FREE_MEMBERSHIP_URL, THINKIFIC_FREE_MEMBERSHIP_PAGE } from "@/const";
-import { Loader2, Heart, ExternalLink, CheckCircle2 } from "lucide-react";
+import { DEFAULT_AAUS_LOGO_URL } from "@/lib/brandAssets";
+import { Loader2, ExternalLink, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const LOGO = import.meta.env.VITE_APP_LOGO as string;
@@ -43,13 +44,7 @@ export default function Register() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center">
         {/* Logo */}
         <div className="flex justify-center mb-4">
-          {LOGO ? (
-            <img src={LOGO} alt="All About Ultrasound™" className="w-16 h-16 object-contain" />
-          ) : (
-            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: BRAND }}>
-              <Heart className="w-8 h-8 text-white" />
-            </div>
-          )}
+          <img src={LOGO || DEFAULT_AAUS_LOGO_URL} alt="All About Ultrasound™" className="w-16 h-16 object-contain" />
         </div>
 
         <h1 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: "Merriweather, serif" }}>

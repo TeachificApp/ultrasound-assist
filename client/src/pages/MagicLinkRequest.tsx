@@ -4,8 +4,9 @@
  */
 import { useState } from "react";
 import { Link } from "wouter";
-import { Mail, ArrowLeft, CheckCircle2, Heart, Zap } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle2, Zap } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { DEFAULT_AAUS_LOGO_URL } from "@/lib/brandAssets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,7 +41,7 @@ export default function MagicLinkRequest() {
             style={{ background: "linear-gradient(135deg, #0e1e2e 0%, #0e4a50 60%, #189aa1 100%)" }}
           >
             <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
-              <img src={LOGO || "https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/aaus_logo_ring_01cc7ccd.webp"} alt="All About Ultrasound™" className="w-8 h-8 object-contain" />
+              <img src={LOGO || DEFAULT_AAUS_LOGO_URL} alt="All About Ultrasound™" className="w-8 h-8 object-contain" />
             </div>
             <h1 className="text-xl font-bold text-white" style={{ fontFamily: "Merriweather, serif" }}>
               All About Ultrasound™

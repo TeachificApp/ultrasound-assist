@@ -9,13 +9,13 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { DEFAULT_AAUS_LOGO_URL } from "@/lib/brandAssets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Loader2, Stethoscope, Activity, BookOpen, Shield, CheckCircle2, Zap, ArrowLeft } from "lucide-react";
 
 const LOGO = import.meta.env.VITE_APP_LOGO as string;
-const DEFAULT_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/aaus_logo_ring_01cc7ccd.webp";
 
 const FEATURES = [
   { icon: Stethoscope, title: "Clinical Navigators", desc: "Abdomen, Pelvic/Gyn, OB, Vascular, POCUS & more" },
@@ -74,7 +74,7 @@ export default function Login() {
         />
         {/* Logo */}
         <div className="relative flex items-center gap-3">
-          <img src={LOGO || DEFAULT_LOGO} alt="All About Ultrasound™" className="w-20 h-20 object-contain drop-shadow-lg" />
+          <img src={LOGO || DEFAULT_AAUS_LOGO_URL} alt="All About Ultrasound™" className="w-20 h-20 object-contain drop-shadow-lg" />
           <div>
             <div className="text-2xl font-black text-white" style={{ fontFamily: "Merriweather, serif" }}>All About Ultrasound™</div>
             <div className="text-xs font-medium" style={{ color: "#4ad9e0" }}>UltrasoundAssist™ Clinical Intelligence</div>
@@ -115,13 +115,7 @@ export default function Login() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-8 lg:hidden">
-            {LOGO ? (
-              <img src={LOGO} alt="All About Ultrasound™" className="w-10 h-10 object-contain" />
-            ) : (
-              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "#189aa1" }}>
-                <Stethoscope className="w-5 h-5 text-white" />
-              </div>
-            )}
+            <img src={LOGO || DEFAULT_AAUS_LOGO_URL} alt="All About Ultrasound™" className="w-10 h-10 object-contain" />
             <div className="text-xl font-black" style={{ fontFamily: "Merriweather, serif", color: "#0e1e2e" }}>All About Ultrasound™</div>
           </div>
 
