@@ -135,7 +135,14 @@ export function registerAuthLoginRoute(app: Express) {
       // Consume the token
       await db
         .update(users)
-        .set({ magicLinkToken: null, magicLinkExpiry: null, emailVerified: true })
+        .set({
+          magicLinkToken: null,
+          magicLinkExpiry: null,
+          emailVerified: true,
+          isPending: false,
+          pendingCreatedAt: null,
+          lastSignedIn: new Date(),
+        })
         .where(eq(users.id, user.id));
 
       // Ensure the user has the base "user" role (idempotent)

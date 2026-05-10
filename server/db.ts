@@ -335,7 +335,14 @@ export async function clearMagicLinkToken(userId: number): Promise<void> {
   if (!db) return;
   await db
     .update(users)
-    .set({ magicLinkToken: null, magicLinkExpiry: null })
+    .set({
+      magicLinkToken: null,
+      magicLinkExpiry: null,
+      emailVerified: true,
+      isPending: false,
+      pendingCreatedAt: null,
+      lastSignedIn: new Date(),
+    })
     .where(eq(users.id, userId));
 }
 

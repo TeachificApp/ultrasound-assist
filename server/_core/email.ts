@@ -16,6 +16,7 @@ interface SendEmailOptions {
   subject: string;
   htmlBody: string;
   previewText?: string;
+  bypassListManagement?: boolean;
 }
 
 export async function sendEmail(opts: SendEmailOptions): Promise<boolean> {
@@ -29,7 +30,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<boolean> {
   }
 
   try {
-    const payload = {
+    const payload: Record<string, unknown> = {
       personalizations: [
         {
           to: [{ name: opts.to.name, email: opts.to.email }],
@@ -49,6 +50,12 @@ export async function sendEmail(opts: SendEmailOptions): Promise<boolean> {
         open_tracking: { enable: false },
       },
     };
+
+    if (opts.bypassListManagement) {
+      payload.mail_settings = {
+        bypass_list_management: { enable: true },
+      };
+    }
 
     const res = await fetch(SENDGRID_API_URL, {
       method: "POST",

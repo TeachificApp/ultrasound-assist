@@ -71,7 +71,7 @@ async function sendVerificationEmail(to: string, token: string, name: string) {
   const verificationUrl = `${appUrl}/verify-email?token=${token}`;
   const firstName = name || "there";
   const { subject, htmlBody, previewText } = buildVerificationEmail({ firstName, verificationUrl });
-  const sent = await sendEmail({ to: { name: firstName, email: to }, subject, htmlBody, previewText });
+  const sent = await sendEmail({ to: { name: firstName, email: to }, subject, htmlBody, previewText, bypassListManagement: true });
   if (!sent) {
     console.warn(`[EmailAuth] Verification email to ${to} could not be sent (SendGrid unavailable)`);
   }
@@ -82,7 +82,7 @@ async function sendPasswordResetEmail(to: string, token: string, name: string) {
   const resetUrl = `${appUrl}/reset-password?token=${token}`;
   const firstName = name || "there";
   const { subject, htmlBody, previewText } = buildPasswordResetEmail({ firstName, resetUrl });
-  const sent = await sendEmail({ to: { name: firstName, email: to }, subject, htmlBody, previewText });
+  const sent = await sendEmail({ to: { name: firstName, email: to }, subject, htmlBody, previewText, bypassListManagement: true });
   if (!sent) {
     console.warn(`[EmailAuth] Password reset email to ${to} could not be sent (SendGrid unavailable)`);
   }

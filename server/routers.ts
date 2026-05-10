@@ -308,6 +308,7 @@ export const appRouter = router({
           subject: emailPayload.subject,
           htmlBody: emailPayload.htmlBody,
           previewText: emailPayload.previewText,
+          bypassListManagement: true,
         });
 
         return { success: true, pendingEmail: newEmail };
@@ -378,6 +379,7 @@ export const appRouter = router({
           subject: emailPayload.subject,
           htmlBody: emailPayload.htmlBody,
           previewText: emailPayload.previewText,
+          bypassListManagement: true,
         });
 
         return { success: true };
@@ -414,16 +416,51 @@ export const appRouter = router({
         email: z.string().email().max(320),
       }))
       .mutation(async ({ input }) => {
-        const { getUserByEmail, setMagicLinkToken } = await import('./db');
+        const {
+          createPendingUser,
+          ensureUserRole,
+          findUserByEmail,
+          markThinkificEnrolled,
+          setMagicLinkToken,
+          updateUserProfile,
+        } = await import('./db');
         const { sendEmail, buildMagicLinkEmail } = await import('./_core/email');
         const crypto = await import('crypto');
 
         const email = input.email.trim().toLowerCase();
-        const user = await getUserByEmail(email);
+        let user = await findUserByEmail(email);
+        let thinkificUser: Awaited<ReturnType<typeof import('./thinkific')['getUserByEmail']>> = null;
 
-        // Always return success to prevent email enumeration
+        if (!user || !user.thinkificEnrolledAt) {
+          const { getUserByEmail: getThinkificUserByEmail } = await import('./thinkific');
+          thinkificUser = await getThinkificUserByEmail(email);
+        }
+
         if (!user) {
-          return { success: true };
+          // Always return success to prevent email enumeration, including Thinkific misses.
+          if (!thinkificUser) {
+            return { success: true };
+          }
+
+          const fullName = thinkificUser.full_name || [thinkificUser.first_name, thinkificUser.last_name].filter(Boolean).join(' ') || email;
+          const userId = await createPendingUser(thinkificUser.email || email);
+
+          await updateUserProfile(userId, { name: fullName, displayName: fullName });
+          await ensureUserRole(userId);
+          await markThinkificEnrolled(userId);
+
+          user = await findUserByEmail(email);
+          if (!user) {
+            console.error(`[auth.requestMagicLink] Created Thinkific-backed user for ${email}, but could not reload the user row.`);
+            return { success: true };
+          }
+        }
+
+        if (thinkificUser) {
+          await ensureUserRole(user.id);
+          if (!user.thinkificEnrolledAt) {
+            await markThinkificEnrolled(user.id);
+          }
         }
 
         const token = crypto.randomBytes(48).toString('hex');
@@ -437,12 +474,16 @@ export const appRouter = router({
         const firstName = (user.displayName || user.name || 'there').split(' ')[0];
         const emailPayload = buildMagicLinkEmail({ firstName, magicUrl });
 
-        await sendEmail({
+        const sent = await sendEmail({
           to: { name: firstName, email: user.email! },
           subject: emailPayload.subject,
           htmlBody: emailPayload.htmlBody,
           previewText: emailPayload.previewText,
+          bypassListManagement: true,
         });
+        if (!sent) {
+          console.warn(`[auth.requestMagicLink] Magic link email to ${user.email} could not be sent.`);
+        }
 
         return { success: true };
       }),
