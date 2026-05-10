@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Mail, Loader2, Stethoscope, Activity, BookOpen, Shield, CheckCircle2, Zap, ArrowLeft } from "lucide-react";
 
 const LOGO = import.meta.env.VITE_APP_LOGO as string;
+const DEFAULT_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663401463434/UrcfdRVE8J6mpMNR48QuFe/aaus_logo_ring_01cc7ccd.webp";
 
 const FEATURES = [
   { icon: Stethoscope, title: "Clinical Navigators", desc: "Abdomen, Pelvic/Gyn, OB, Vascular, POCUS & more" },
@@ -73,13 +74,7 @@ export default function Login() {
         />
         {/* Logo */}
         <div className="relative flex items-center gap-3">
-          {LOGO ? (
-            <img src={LOGO} alt="All About Ultrasound™" className="w-20 h-20 object-contain drop-shadow-lg" />
-          ) : (
-            <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "rgba(24,154,161,0.3)" }}>
-              <Stethoscope className="w-10 h-10 text-white" />
-            </div>
-          )}
+          <img src={LOGO || DEFAULT_LOGO} alt="All About Ultrasound™" className="w-20 h-20 object-contain drop-shadow-lg" />
           <div>
             <div className="text-2xl font-black text-white" style={{ fontFamily: "Merriweather, serif" }}>All About Ultrasound™</div>
             <div className="text-xs font-medium" style={{ color: "#4ad9e0" }}>UltrasoundAssist™ Clinical Intelligence</div>
